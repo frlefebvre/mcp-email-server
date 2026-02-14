@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Annotated, Literal
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 from pydantic import Field
 
 from mcp_email_server.config import (
@@ -26,13 +27,29 @@ async def get_account(account_name: str) -> EmailSettings | ProviderSettings | N
     return settings.get_account(account_name, masked=True)
 
 
-@mcp.tool(description="List all configured email accounts with masked credentials.")
+@mcp.tool(
+    description="List all configured email accounts with masked credentials.",
+    annotations=ToolAnnotations(
+        title="List Accounts",
+        readOnlyHint=True,
+        openWorldHint=False,
+    ),
+)
 async def list_available_accounts() -> list[AccountAttributes]:
     settings = get_settings()
     return [account.masked() for account in settings.get_accounts()]
 
 
-@mcp.tool(description="Add a new email account configuration to the settings.")
+@mcp.tool(
+    description="Add a new email account configuration to the settings.",
+    annotations=ToolAnnotations(
+        title="Add Account",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=False,
+    ),
+)
 async def add_email_account(email: EmailSettings) -> str:
     settings = get_settings()
     settings.add_email(email)
@@ -41,7 +58,12 @@ async def add_email_account(email: EmailSettings) -> str:
 
 
 @mcp.tool(
-    description="List email metadata (email_id, subject, sender, recipients, date) without body content. Returns email_id for use with get_emails_content."
+    description="List email metadata (email_id, subject, sender, recipients, date) without body content. Returns email_id for use with get_emails_content.",
+    annotations=ToolAnnotations(
+        title="List Emails",
+        readOnlyHint=True,
+        openWorldHint=True,
+    ),
 )
 async def list_emails_metadata(
     account_name: Annotated[str, Field(description="The name of the email account.")],
@@ -101,7 +123,12 @@ async def list_emails_metadata(
 
 
 @mcp.tool(
-    description="Get the full content (including body) of one or more emails by their email_id. Use list_emails_metadata first to get the email_id."
+    description="Get the full content (including body) of one or more emails by their email_id. Use list_emails_metadata first to get the email_id.",
+    annotations=ToolAnnotations(
+        title="Get Email Content",
+        readOnlyHint=True,
+        openWorldHint=True,
+    ),
 )
 async def get_emails_content(
     account_name: Annotated[str, Field(description="The name of the email account.")],
@@ -119,6 +146,13 @@ async def get_emails_content(
 
 @mcp.tool(
     description="Send an email using the specified account. Supports replying to emails with proper threading when in_reply_to is provided.",
+    annotations=ToolAnnotations(
+        title="Send Email",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
 )
 async def send_email(
     account_name: Annotated[str, Field(description="The name of the email account to send from.")],
@@ -177,7 +211,14 @@ async def send_email(
 
 
 @mcp.tool(
-    description="Delete one or more emails by their email_id. Use list_emails_metadata first to get the email_id."
+    description="Delete one or more emails by their email_id. Use list_emails_metadata first to get the email_id.",
+    annotations=ToolAnnotations(
+        title="Delete Emails",
+        readOnlyHint=False,
+        destructiveHint=True,
+        idempotentHint=True,
+        openWorldHint=True,
+    ),
 )
 async def delete_emails(
     account_name: Annotated[str, Field(description="The name of the email account.")],
@@ -198,6 +239,13 @@ async def delete_emails(
 
 @mcp.tool(
     description="Download an email attachment and save it to the specified path. This feature must be explicitly enabled in settings (enable_attachment_download=true) due to security considerations.",
+    annotations=ToolAnnotations(
+        title="Download Attachment",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
 )
 async def download_attachment(
     account_name: Annotated[str, Field(description="The name of the email account.")],
